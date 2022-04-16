@@ -1,131 +1,253 @@
 package per.goweii.tablestringbuilder;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
+import static per.goweii.tablestringbuilder.TableStringUtils.*;
+
+/**
+ * 文本表格生成工具
+ * <p>
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │                             2022 January                             │
+ * ├────────┬────────┬─────────┬───────────┬──────────┬────────┬──────────┤
+ * │ Sunday │ Monday │ Tuesday │ Wednesday │ Thursday │ Friday │ Saturday │
+ * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
+ * │        │        │         │           │          │        │        1 │
+ * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
+ * │      2 │      3 │       4 │         5 │        6 │      7 │        8 │
+ * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
+ * │      9 │     10 │      11 │        12 │       13 │     14 │       15 │
+ * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
+ * │     16 │     17 │      18 │        19 │       20 │     21 │       22 │
+ * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
+ * │     23 │     24 │      25 │        26 │       27 │     28 │       29 │
+ * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
+ * │     30 │     31 │         │           │          │        │          │
+ * └────────┴────────┴─────────┴───────────┴──────────┴────────┴──────────┘
+ */
 public final class TableStringBuilder {
-    private String mTitle = null;
-    private List<String> mHeader = null;
-    private List<List<String>> mContents = null;
-
     private TableStyle mStyle = new TableStyle();
 
-    private boolean mContentDivide = true;
+    private String mCaption = null;
+    private List<String> mHead = null;
+    private List<List<String>> mBody = null;
 
-    private int mTitleAlignment = 0;
-    private int mHeaderAlignment = -1;
-    private int mContentAlignment = -1;
+    public TableStyle getStyle() {
+        Objects.requireNonNull(mStyle);
+        return mStyle;
+    }
 
-    public TableStringBuilder setTableStyle(TableStyle style) {
-        if (style != null) {
-            mStyle = style;
+    public TableStringBuilder setStyle(TableStyle style) {
+        Objects.requireNonNull(style);
+        mStyle = style;
+        return this;
+    }
+
+    public TableStringBuilder setCaption(String caption) {
+        mCaption = caption;
+        return this;
+    }
+
+    public TableStringBuilder setHead(List<String> head) {
+        mHead = head;
+        return this;
+    }
+
+    public TableStringBuilder addBody(List<String> body) {
+        if (mBody == null) {
+            mBody = new LinkedList<>();
+        }
+        if (body != null) {
+            mBody.add(body);
         }
         return this;
     }
 
-    public TableStringBuilder setTitleAlignment(int alignment) {
-        mTitleAlignment = alignment;
-        return this;
-    }
-
-    public TableStringBuilder setHeaderAlignment(int alignment) {
-        mHeaderAlignment = alignment;
-        return this;
-    }
-
-    public TableStringBuilder setContentAlignment(int alignment) {
-        mContentAlignment = alignment;
-        return this;
-    }
-
-    public TableStringBuilder setContentDivide(boolean contentDivide) {
-        mContentDivide = contentDivide;
-        return this;
-    }
-
-    public TableStringBuilder setTitle(String title) {
-        mTitle = title;
-        return this;
-    }
-
-    public TableStringBuilder setHeader(List<String> header) {
-        mHeader = header;
-        return this;
-    }
-
-    public TableStringBuilder addContent(List<String> content) {
-        if (mContents == null) {
-            mContents = new LinkedList<>();
-        }
-        if (content != null) {
-            mContents.add(content);
+    public TableStringBuilder clearBody() {
+        if (mBody != null) {
+            mBody.clear();
         }
         return this;
+    }
+
+    public TableStringBuilder clear() {
+        mCaption = null;
+        mHead = null;
+        mBody = null;
+        return this;
+    }
+
+    public boolean isEmpty() {
+        return !hasCaption() && !hasHead() && !hasBody();
+    }
+
+    public boolean hasCaption() {
+        return mCaption != null && mCaption.length() > 0;
+    }
+
+    public boolean hasHead() {
+        return mHead != null && mHead.size() > 0;
+    }
+
+    public boolean hasBody() {
+        return mBody != null && mBody.size() > 0;
     }
 
     public List<String> build() {
-        int rowCount = mHeader != null ? mHeader.size() : 0;
-        if (mContents != null) {
-            for (List<String> content : mContents) {
-                rowCount = Math.max(rowCount, content.size());
+        if (isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        final int cellPadding = mStyle.getCellPadding();
+        final int cellMaxWidth = mStyle.getCellMaxWidth();
+
+        // 表格的列数
+        int columnCount = hasCaption() ? 1 : 0;
+        if (hasHead()) {
+            columnCount = Math.max(columnCount, mHead.size());
+        }
+        if (hasBody()) {
+            for (List<String> body : mBody) {
+                columnCount = Math.max(columnCount, body.size());
             }
         }
-        int[] rowLengths = new int[rowCount];
-        Arrays.fill(rowLengths, 0);
-        if (mHeader != null) {
-            for (int i = 0; i < mHeader.size(); i++) {
-                rowLengths[i] = mHeader.get(i) != null ? mHeader.get(i).length() : 0;
-            }
-        }
-        if (mContents != null) {
-            for (List<String> content : mContents) {
-                for (int i = 0; i < content.size(); i++) {
-                    rowLengths[i] = Math.max(rowLengths[i], content.get(i) != null ? content.get(i).length() : 0);
+        // 表格每列的宽度
+        int[] columnWidths = new int[columnCount];
+        Arrays.fill(columnWidths, 0);
+        if (hasBody()) {
+            for (List<String> body : mBody) {
+                for (int i = 0; i < body.size(); i++) {
+                    int bodyWidth = body.get(i) != null ? body.get(i).length() : 0;
+                    columnWidths[i] = Math.max(columnWidths[i], bodyWidth + cellPadding * 2);
                 }
             }
         }
-        int tableLength = rowCount + 1;
-        for (int rowLength : rowLengths) {
-            tableLength += rowLength;
+        if (hasHead()) {
+            for (int i = 0; i < mHead.size(); i++) {
+                int headWidth = mHead.get(i) != null ? mHead.get(i).length() : 0;
+                columnWidths[i] = headWidth + cellPadding * 2;
+            }
         }
-        boolean hasTitle = mTitle != null && mTitle.length() > 0;
-        boolean hasHeader = mHeader != null && mHeader.size() > 0;
-        boolean hasContent = mContents != null && mContents.size() > 0;
+        if (hasCaption()) {
+            if (columnWidths.length == 1 && columnWidths[0] == 0) {
+                columnWidths[0] = mCaption.length();
+            }
+        }
+        if (cellMaxWidth > 0) {
+            for (int i = 0; i < columnWidths.length; i++) {
+                columnWidths[i] = Math.min(columnWidths[i], cellMaxWidth);
+            }
+        }
+
+        // 生成表格每一行的字符串
         List<String> lines = new LinkedList<>();
-        if (hasTitle) {
-            lines.add(getLineString(null, rowLengths, mStyle.lt, mStyle.h, mStyle.rt, mStyle.h, -1));
-            lines.add(mStyle.v + getCellString(mTitle, tableLength - 2, mStyle.p, mTitleAlignment) + mStyle.v);
-        }
-        if (hasHeader) {
-            if (hasTitle) {
-                lines.add(getLineString(null, rowLengths, mStyle.cl, mStyle.ct, mStyle.cr, mStyle.h, -1));
-            } else {
-                lines.add(getLineString(null, rowLengths, mStyle.lt, mStyle.ct, mStyle.rt, mStyle.h, -1));
-            }
-            lines.add(getLineString(mHeader, rowLengths, mStyle.v, mStyle.v, mStyle.v, mStyle.p, mHeaderAlignment));
-        }
-        if (hasContent) {
-            if (hasHeader) {
-                lines.add(getLineString(null, rowLengths, mStyle.cl, mStyle.c, mStyle.cr, mStyle.h, -1));
-            } else if (hasTitle) {
-                lines.add(getLineString(null, rowLengths, mStyle.cl, mStyle.ct, mStyle.cr, mStyle.h, -1));
-            } else {
-                lines.add(getLineString(null, rowLengths, mStyle.lt, mStyle.ct, mStyle.rt, mStyle.h, -1));
-            }
-            for (int i = 0; i < mContents.size(); i++) {
-                lines.add(getLineString(mContents.get(i), rowLengths, mStyle.v, mStyle.v, mStyle.v, mStyle.p, mContentAlignment));
-                if (mContentDivide && i < mContents.size() - 1) {
-                    lines.add(getLineString(null, rowLengths, mStyle.cl, mStyle.c, mStyle.cr, mStyle.h, -1));
-                }
-            }
-        }
-        if (hasContent || hasHeader) {
-            lines.add(getLineString(null, rowLengths, mStyle.lb, mStyle.cb, mStyle.rb, mStyle.h, -1));
-        } else if (hasTitle) {
-            lines.add(getLineString(null, rowLengths, mStyle.lb, mStyle.h, mStyle.rb, mStyle.h, -1));
-        }
+        buildCaption(lines, columnWidths);
+        buildHead(lines, columnWidths);
+        buildBody(lines, columnWidths);
         return lines;
+    }
+
+    /**
+     * 生成表名栏每一行的字符串，包含顶部和底部边框
+     *
+     * @param lines        表格
+     * @param columnWidths 每列宽度
+     */
+    private void buildCaption(List<String> lines, int[] columnWidths) {
+        if (!hasCaption()) {
+            return;
+        }
+
+        final TableStyle.Border border = mStyle.getBorder();
+        final TableStyle.Align align = mStyle.getAlign();
+        final int cellPadding = mStyle.getCellPadding();
+
+        // 表格的宽度
+        int tableWidth = columnWidths.length + 1;
+        for (int rowLength : columnWidths) {
+            tableWidth += rowLength;
+        }
+
+        // 表头的宽度
+        int captionWidth = tableWidth - 2;
+        // 表头的可使用宽度
+        int unableWidth = captionWidth - cellPadding * 2;
+
+        lines.add(buildRowString(null, columnWidths, cellPadding, border.topLeft, border.horizontal, border.topRight, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
+
+        int startIndex = 0;
+        do {
+            int endIndex = Math.min(mCaption.length(), startIndex + unableWidth);
+            lines.add(border.vertical + buildCellString(mCaption.substring(startIndex, endIndex), captionWidth, cellPadding, border.placeholder, align.caption) + border.vertical);
+            startIndex = endIndex;
+        } while (startIndex < mCaption.length());
+
+        if (hasHead()) {
+            lines.add(buildRowString(null, columnWidths, cellPadding, border.leftCenter, border.topCenter, border.rightCenter, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
+        } else if (hasBody()) {
+            lines.add(buildRowString(null, columnWidths, cellPadding, border.leftCenter, border.topCenter, border.rightCenter, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
+        } else {
+            lines.add(buildRowString(null, columnWidths, cellPadding, border.bottomLeft, border.horizontal, border.bottomRight, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
+        }
+    }
+
+    /**
+     * 生成标题栏每一行的字符串，包含顶部和底部边框
+     *
+     * @param lines        表格
+     * @param columnWidths 每列宽度
+     */
+    private void buildHead(List<String> lines, int[] columnWidths) {
+        if (!hasHead()) {
+            return;
+        }
+
+        final TableStyle.Border border = mStyle.getBorder();
+        final TableStyle.Align align = mStyle.getAlign();
+        final int cellPadding = mStyle.getCellPadding();
+        final boolean cellAutoWrap = mStyle.isCellAutoWrap();
+
+        if (!hasCaption()) {
+            lines.add(buildRowString(null, columnWidths, cellPadding, border.topLeft, border.topCenter, border.topRight, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
+        }
+
+        lines.add(buildRowString(mHead, columnWidths, cellPadding, border.vertical, border.vertical, border.vertical, border.placeholder, align.head, cellAutoWrap));
+
+        if (hasBody()) {
+            lines.add(buildRowString(null, columnWidths, cellPadding, border.leftCenter, border.center, border.rightCenter, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
+        } else {
+            lines.add(buildRowString(null, columnWidths, cellPadding, border.bottomLeft, border.horizontal, border.bottomRight, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
+        }
+    }
+
+    /**
+     * 生成内容栏每一行的字符串，包含顶部和底部边框
+     *
+     * @param lines        表格
+     * @param columnWidths 每列宽度
+     */
+    private void buildBody(List<String> lines, int[] columnWidths) {
+        if (!hasBody()) {
+            return;
+        }
+
+        final TableStyle.Border border = mStyle.getBorder();
+        final TableStyle.Align align = mStyle.getAlign();
+        final int cellPadding = mStyle.getCellPadding();
+        final boolean cellAutoWrap = mStyle.isCellAutoWrap();
+
+        if (!hasHead() && !hasCaption()) {
+            lines.add(buildRowString(null, columnWidths, cellPadding, border.topLeft, border.topCenter, border.topRight, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
+        }
+
+        for (int i = 0; i < mBody.size(); i++) {
+            lines.add(buildRowString(mBody.get(i), columnWidths, cellPadding, border.vertical, border.vertical, border.vertical, border.placeholder, align.body, cellAutoWrap));
+            if (mStyle.isBodyDivide() && i < mBody.size() - 1) {
+                lines.add(buildRowString(null, columnWidths, cellPadding, border.leftCenter, border.center, border.rightCenter, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
+            }
+        }
+
+        lines.add(buildRowString(null, columnWidths, cellPadding, border.bottomLeft, border.bottomCenter, border.bottomRight, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
     }
 
     @Override
@@ -137,52 +259,6 @@ public final class TableStringBuilder {
                 stringBuilder.append('\n');
             }
             stringBuilder.append(lines.get(i));
-        }
-        return stringBuilder.toString();
-    }
-
-    private String getLineString(List<String> texts, int[] lengths, char leading, char separator, char trailing, char placeholder, int alignment) {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(leading);
-        int count = Math.max(texts != null ? texts.size() : 0, lengths != null ? lengths.length : 0);
-        for (int i = 0; i < count; i++) {
-            String text = texts != null && texts.size() > i ? texts.get(i) : null;
-            int length = lengths != null && lengths.length > i ? lengths[i] : 0;
-            if (i > 0) {
-                stringBuilder.append(separator);
-            }
-            stringBuilder.append(getCellString(text, length, placeholder, alignment));
-        }
-        stringBuilder.append(trailing);
-        return stringBuilder.toString();
-    }
-
-    private String getCellString(String text, int length, char placeholder, int alignment) {
-        if (length <= 0) {
-            return "";
-        }
-        int textLength = text != null ? text.length() : 0;
-        if (textLength > length) {
-            return text.substring(0, length);
-        } else if (textLength == length) {
-            return text;
-        }
-        StringBuilder stringBuilder = new StringBuilder();
-        if (textLength > 0) {
-            stringBuilder.append(text);
-        }
-        while (stringBuilder.length() < length) {
-            if (alignment < 0) {
-                stringBuilder.append(placeholder);
-            } else if (alignment > 0) {
-                stringBuilder.insert(0, placeholder);
-            } else {
-                if ((length - stringBuilder.length()) % 2 == 0) {
-                    stringBuilder.insert(0, placeholder);
-                } else {
-                    stringBuilder.append(placeholder);
-                }
-            }
         }
         return stringBuilder.toString();
     }
