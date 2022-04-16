@@ -12,17 +12,17 @@ import static per.goweii.tablestringbuilder.TableStringUtils.*;
  * ├────────┬────────┬─────────┬───────────┬──────────┬────────┬──────────┤
  * │ Sunday │ Monday │ Tuesday │ Wednesday │ Thursday │ Friday │ Saturday │
  * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
- * │        │        │         │           │          │        │        1 │
+ * │        │        │         │           │          │        │    1     │
  * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
- * │      2 │      3 │       4 │         5 │        6 │      7 │        8 │
+ * │   2    │   3    │    4    │     5     │    6     │   7    │    8     │
  * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
- * │      9 │     10 │      11 │        12 │       13 │     14 │       15 │
+ * │   9    │   10   │   11    │    12     │    13    │   14   │    15    │
  * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
- * │     16 │     17 │      18 │        19 │       20 │     21 │       22 │
+ * │   16   │   17   │   18    │    19     │    20    │   21   │    22    │
  * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
- * │     23 │     24 │      25 │        26 │       27 │     28 │       29 │
+ * │   23   │   24   │   25    │    26     │    27    │   28   │    29    │
  * ├────────┼────────┼─────────┼───────────┼──────────┼────────┼──────────┤
- * │     30 │     31 │         │           │          │        │          │
+ * │   30   │   31   │         │           │          │        │          │
  * └────────┴────────┴─────────┴───────────┴──────────┴────────┴──────────┘
  */
 public final class TableStringBuilder {
@@ -98,8 +98,7 @@ public final class TableStringBuilder {
             return Collections.emptyList();
         }
 
-        final int cellPadding = mStyle.getCellPadding();
-        final int cellMaxWidth = mStyle.getCellMaxWidth();
+        final int cellPadding = Math.max(0, mStyle.cellPadding);
 
         // 表格的列数
         int columnCount = hasCaption() ? 1 : 0;
@@ -133,9 +132,9 @@ public final class TableStringBuilder {
                 columnWidths[0] = mCaption.length();
             }
         }
-        if (cellMaxWidth > 0) {
+        if (mStyle.cellMaxWidth > 0) {
             for (int i = 0; i < columnWidths.length; i++) {
-                columnWidths[i] = Math.min(columnWidths[i], cellMaxWidth);
+                columnWidths[i] = Math.min(columnWidths[i], mStyle.cellMaxWidth);
             }
         }
 
@@ -158,9 +157,9 @@ public final class TableStringBuilder {
             return;
         }
 
-        final TableStyle.Border border = mStyle.getBorder();
-        final TableStyle.Align align = mStyle.getAlign();
-        final int cellPadding = mStyle.getCellPadding();
+        final TableStyle.Border border = mStyle.border;
+        final TableStyle.Align align = mStyle.align;
+        final int cellPadding = Math.max(0, mStyle.cellPadding);
 
         // 表格的宽度
         int tableWidth = columnWidths.length + 1;
@@ -202,10 +201,10 @@ public final class TableStringBuilder {
             return;
         }
 
-        final TableStyle.Border border = mStyle.getBorder();
-        final TableStyle.Align align = mStyle.getAlign();
-        final int cellPadding = mStyle.getCellPadding();
-        final boolean cellAutoWrap = mStyle.isCellAutoWrap();
+        final TableStyle.Border border = mStyle.border;
+        final TableStyle.Align align = mStyle.align;
+        final int cellPadding = Math.max(0, mStyle.cellPadding);
+        final boolean cellAutoWrap = mStyle.cellAutoWrap;
 
         if (!hasCaption()) {
             lines.add(buildRowString(null, columnWidths, cellPadding, border.topLeft, border.topCenter, border.topRight, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
@@ -231,10 +230,10 @@ public final class TableStringBuilder {
             return;
         }
 
-        final TableStyle.Border border = mStyle.getBorder();
-        final TableStyle.Align align = mStyle.getAlign();
-        final int cellPadding = mStyle.getCellPadding();
-        final boolean cellAutoWrap = mStyle.isCellAutoWrap();
+        final TableStyle.Border border = mStyle.border;
+        final TableStyle.Align align = mStyle.align;
+        final int cellPadding = Math.max(0, mStyle.cellPadding);
+        final boolean cellAutoWrap = mStyle.cellAutoWrap;
 
         if (!hasHead() && !hasCaption()) {
             lines.add(buildRowString(null, columnWidths, cellPadding, border.topLeft, border.topCenter, border.topRight, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
@@ -242,7 +241,7 @@ public final class TableStringBuilder {
 
         for (int i = 0; i < mBody.size(); i++) {
             lines.add(buildRowString(mBody.get(i), columnWidths, cellPadding, border.vertical, border.vertical, border.vertical, border.placeholder, align.body, cellAutoWrap));
-            if (mStyle.isBodyDivide() && i < mBody.size() - 1) {
+            if (mStyle.bodyDivide && i < mBody.size() - 1) {
                 lines.add(buildRowString(null, columnWidths, cellPadding, border.leftCenter, border.center, border.rightCenter, border.horizontal, TableStyle.Align.ALIGN_LEFT, false));
             }
         }

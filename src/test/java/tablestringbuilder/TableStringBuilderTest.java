@@ -11,6 +11,9 @@ public class TableStringBuilderTest {
     @Test
     public void testDemo() {
         TableStringBuilder tableStringBuilder = new TableStringBuilder();
+        tableStringBuilder.getStyle().align.caption = 0;
+        tableStringBuilder.getStyle().align.head = 0;
+        tableStringBuilder.getStyle().align.body = 0;
         tableStringBuilder.setCaption("2022 January");
         List<String> head = new LinkedList<>();
         head.add("Sunday");
@@ -42,11 +45,6 @@ public class TableStringBuilderTest {
     @Test
     public void testRandom() {
         TableStringBuilder tableStringBuilder = new TableStringBuilder();
-
-        tableStringBuilder.getStyle().setBodyDivide(true);
-        tableStringBuilder.getStyle().setCellMaxWidth(20);
-        tableStringBuilder.getStyle().setCellAutoWrap(true);
-
         tableStringBuilder.setCaption("title-" + getRandomString(50));
         List<String> head = new LinkedList<>();
         for (int i = 0; i < 3; i++) {
